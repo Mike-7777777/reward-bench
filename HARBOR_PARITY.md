@@ -25,8 +25,12 @@ uv run python scripts/run_generative_v2_agent.py \
 ```
 
 Each run writes `rb2_agent_runs/<timestamp>/`: `results.json` (score per subset,
-their unweighted mean as `average`, and the agent cost), `per_task.jsonl`, and
-per-task agent logs under `agent_logs/`.
+their unweighted mean as `average`, the agent cost, and `agent_errors`),
+`per_task.jsonl`, and per-task agent logs under `agent_logs/`. The script exits
+with status 1 when an agent run timed out or did not end cleanly (for example an
+API error); those tasks are listed in the log and need a rerun before the scores
+are used. Ties is left out of the average when the selected rows hold no complete
+ref/tied pair.
 
 `--dry_run_dir DIR` writes the instruction of every task as `DIR/<task_id>.md`
 without starting an agent. These files are byte-identical to the `instruction.md`

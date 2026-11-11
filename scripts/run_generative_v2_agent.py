@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import logging
+import math
 import os
 import re
 import subprocess
@@ -327,19 +328,34 @@ def main():
             ties_dataset = Dataset.from_list(
                 [{key: record[key] for key in ("id", "num_correct", "scores")} for record in ties_records]
             )
-            _, results_grouped[subset] = process_single_model(ties_dataset)
+            _, ties_score = process_single_model(ties_dataset)
+            if math.isnan(ties_score):
+                # no complete ref/tied pair among the selected rows: left out of the average
+                logger.warning("Ties: no complete ref/tied pair, subset skipped")
+                continue
+            results_grouped[subset] = ties_score
         else:
             results = [record["results"] for record in records if record["subset"] == subset]
             results_grouped[subset] = sum(results) / len(results)
             print(f"{subset}: {sum(results)}/{len(results)} ({results_grouped[subset]})")
     subsets = [key for key in results_grouped if key not in ("model", "agent", "seed")]
     results_grouped["average"] = sum(results_grouped[key] for key in subsets) / len(subsets)
+    # a timeout or an agent run that did not end cleanly (API error, crash) is not a judgment
+    agent_errors = [
+        record["task_id"]
+        for record in records
+        if record["agent"].get("status") != "ok" or record["agent"].get("is_error") is not False
+    ]
+    results_grouped["agent_errors"] = len(agent_errors)
     costs = [record["agent"].get("total_cost_usd") or 0 for record in records]
     results_grouped["agent_cost_usd"] = sum(costs)
     print(json.dumps(results_grouped, indent=2))
     (out / "results.json").write_text(json.dumps(results_grouped, indent=2) + "\n")
     (out / "per_task.jsonl").write_text("".join(json.dumps(record) + "\n" for record in records))
     logger.info(f"run directory: {out}")
+    if agent_errors:
+        logger.error(f"{len(agent_errors)} agent runs failed and need a rerun: {agent_errors[:10]}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
