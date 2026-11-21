@@ -70,6 +70,14 @@ ENV PATH="/root/.local/bin:${PATH}"
 WORKDIR /workspace
 """
 
+MODEL_ALIAS_VARS = (
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL",
+    "CLAUDE_CODE_SUBAGENT_MODEL",
+)
+
 # Claude Code launched the way Harbor's claude-code agent launches it.
 RUN_SCRIPT = (
     "mkdir -p $CLAUDE_CONFIG_DIR/debug $CLAUDE_CONFIG_DIR/projects/-app "
@@ -220,6 +228,11 @@ class ClaudeCodeRunner:
         for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"):
             if os.environ.get(name):
                 env[name] = os.environ[name]
+        if "ANTHROPIC_BASE_URL" in env:
+            # Harbor's claude-code agent points every model alias at the requested
+            # model when a custom endpoint is set, so background calls use it too.
+            for name in MODEL_ALIAS_VARS:
+                env[name] = os.environ.get(name, self.model)
         command = ["docker", "run", "--rm", "-v", f"{workspace.resolve()}:/workspace"]
         command += ["-v", f"{logs.resolve()}:/logs/agent"]
         for name in env:
