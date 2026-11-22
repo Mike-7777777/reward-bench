@@ -15,13 +15,21 @@ runs needs (harbor-framework/adapters, `src/reward-bench-2`):
 
 ## Run
 
-Needs Docker and `uv`.
+Needs Docker and `uv`. The parity runs used Claude Code 2.1.330, `claude-haiku-5-5` and 8 threads; set `ANTHROPIC_BASE_URL` as well to use an Anthropic-compatible endpoint.
 
 ```bash
 uv sync
-export ANTHROPIC_API_KEY=... CLAUDE_CODE_VERSION=<pinned version>
+export ANTHROPIC_API_KEY=... CLAUDE_CODE_VERSION=2.1.330
 uv run python scripts/run_generative_v2_agent.py \
-  --model <model id> --ids scripts/harbor_parity_ids.txt --num_threads 4
+  --model claude-haiku-5-5 --ids scripts/harbor_parity_ids.txt --num_threads 8
+```
+
+The Harbor side, in a checkout of [harbor-framework/adapters](https://github.com/harbor-framework/adapters) (see the adapter's README for details):
+
+```bash
+uv run --project src/reward-bench-2 reward-bench-2 --split parity --output-dir datasets/reward-bench-2-parity
+harbor run -p datasets/reward-bench-2-parity -a claude-code -m anthropic/claude-haiku-5-5 --ak version=2.1.330 -n 12
+uv run --project src/reward-bench-2 reward-bench-2-score jobs/<job_name>
 ```
 
 Each run writes `rb2_agent_runs/<timestamp>/`: `results.json` (score per subset,

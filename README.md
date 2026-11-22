@@ -29,6 +29,17 @@
 
 ---
 
+> **Harbor parity (branch `harbor-parity`).** This fork adds the original-benchmark side of the parity runs for the [Harbor RewardBench 2 adapter](https://github.com/harbor-framework/adapters/pull/84). See [`HARBOR_PARITY.md`](HARBOR_PARITY.md) for what was added, and reproduce one parity run with:
+>
+> ```bash
+> uv sync
+> export ANTHROPIC_API_KEY=... CLAUDE_CODE_VERSION=2.1.330
+> uv run python scripts/run_generative_v2_agent.py \
+>   --model claude-haiku-5-5 --ids scripts/harbor_parity_ids.txt --num_threads 8
+> ```
+
+---
+
 **RewardBench** is a benchmark designed to evaluate the capabilities and safety of reward models (including those trained with Direct Preference Optimization, DPO).
 The repository includes the following:
 * Common inference code for a variety of reward models (Starling, PairRM, OpenAssistant, DPO, and more).
